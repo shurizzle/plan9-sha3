@@ -97,6 +97,10 @@ sha3(const uchar *data, ulong dlen, uchar *digest, SHA3_state *s,
 		(((u64int)s->buf[7]) << 56);
 	s->state[desc->rate-1] ^= 0x8000000000000000ULL;
 	keccak_f1600(s->state);
+
+	if(desc->size == 0)
+		return s;
+
 	memcpy(digest, s->state, desc->size);
 
 	if(s->malloced == 1)
@@ -158,6 +162,18 @@ static const SHA3Desc KECCAK_256FULL = {
 	.pad = 1,
 };
 
+static const SHA3Desc SHAKE_128 = {
+	.size = 0,
+	.rate = 168/8,
+	.pad = 0x1f,
+};
+
+static const SHA3Desc SHAKE_256 = {
+	.size = 0,
+	.rate = 136/8,
+	.pad = 0x1f,
+};
+
 DigestState*
 sha3_224(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
@@ -212,26 +228,42 @@ keccak_256full(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &KECCAK_256FULL);
 }
 
+static DigestState*
+sha3xof(const uchar *data, ulong dlen, uchar *digest, ulong len,
+		DigestState *state, const SHA3Desc *desc)
+{
+	usize brate;
+	SHA3_state *s;
+
+	s = sha3(data, dlen, digest, (SHA3_state*)state, desc);
+
+	if(s == nil || digest == nil)
+		return (DigestState*)s;
+
+	brate = desc->rate*8;
+	while(len > brate){
+		memcpy(digest, s->state, brate);
+		keccak_f1600(s->state);
+		digest += brate;
+		len -= brate;
+	}
+	memcpy(digest, s->state, len);
+
+	if(s->malloced == 1)
+		free(s);
+	return nil;
+}
+
 DigestState*
 shake_128(const uchar *data, ulong dlen, uchar *digest, ulong len,
 		DigestState *s)
 {
-	SHA3Desc desc = {
-		.size = len,
-		.rate = 168/8,
-		.pad = 0x1f,
-	};
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &desc);
+	return sha3xof(data, dlen, digest, len, s, &SHAKE_128);
 }
 
 DigestState*
 shake_256(const uchar *data, ulong dlen, uchar *digest, ulong len,
 		DigestState *s)
 {
-	SHA3Desc desc = {
-		.size = len,
-		.rate = 136/8,
-		.pad = 0x1f,
-	};
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &desc);
+	return sha3xof(data, dlen, digest, len, s, &SHAKE_256);
 }

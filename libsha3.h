@@ -36,3 +36,5 @@ DigestState*	keccak_256(uchar*, ulong, uchar*, DigestState*);
 DigestState*	keccak_384(uchar*, ulong, uchar*, DigestState*);
 DigestState*	keccak_512(uchar*, ulong, uchar*, DigestState*);
 DigestState*	keccak_256full(uchar*, ulong, uchar*, DigestState*);
+DigestState*	shake_128(uchar*, ulong, uchar*, ulong, DigestState*);
+DigestState*	shake_256(uchar*, ulong, uchar*, ulong, DigestState*);

@@ -14,6 +14,8 @@ HFILES=\
 	keccak_384.c\
 	keccak_512.c\
 	keccak_256full.c\
+	shake_128.c\
+	shake_256.c\
 
 </sys/src/cmd/mkone
 
