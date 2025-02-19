@@ -2,6 +2,49 @@
 #include <libc.h>
 #include <libsec.h>
 
+#define readu64(b)                                                             \
+		(((u64int)(b)[0]) |                                                        \
+		(((u64int)(b)[1]) <<  8) |                                                 \
+		(((u64int)(b)[2]) << 16) |                                                 \
+		(((u64int)(b)[3]) << 24) |                                                 \
+		(((u64int)(b)[4]) << 32) |                                                 \
+		(((u64int)(b)[5]) << 40) |                                                 \
+		(((u64int)(b)[6]) << 48) |                                                 \
+		(((u64int)(b)[7]) << 56))
+
+#define absorb(v, l, r, rounds)                                                \
+	do{                                                                          \
+		if(s->blen != 0){                                                          \
+			while(s->blen < 8 && l > 0){                                             \
+				s->buf[s->blen++] = v[0];                                              \
+				v += 1;                                                                \
+				l -= 1;                                                                \
+			}                                                                        \
+			if(s->blen == 8){                                                        \
+				s->blen = 0;                                                           \
+				s->state[s->len++] ^= readu64(s->buf);                                 \
+				if(s->len == r){                                                       \
+					s->len = 0;                                                          \
+					keccak_p1600(s->state, rounds);                                      \
+				}                                                                      \
+			}                                                                        \
+		}                                                                          \
+		while(l >= 8){                                                             \
+			s->state[s->len++] ^= readu64(v);                                        \
+			v += 8;                                                                  \
+			l -= 8;                                                                  \
+			if(s->len == r){                                                         \
+				s->len = 0;                                                            \
+				keccak_p1600(s->state, rounds);                                        \
+			}                                                                        \
+		}                                                                          \
+		while(l > 0){                                                              \
+			s->buf[s->blen++] = v[0];                                                \
+			v += 1;                                                                  \
+			l -= 1;                                                                  \
+		}                                                                          \
+	}while(0)
+
 typedef struct SHA3_state SHA3_state;
 struct SHA3_state
 {
@@ -27,7 +70,7 @@ struct SHA3Desc
 void	keccak_p1600(u64int*, usize);
 
 static SHA3_state*
-sha3(const uchar *data, ulong dlen, uchar *digest, SHA3_state *s,
+_sha3run(const uchar *data, ulong dlen, uchar *digest, SHA3_state *s,
 		const SHA3Desc *desc)
 {
 	if(s == nil){
@@ -37,67 +80,15 @@ sha3(const uchar *data, ulong dlen, uchar *digest, SHA3_state *s,
 		s->malloced = 1;
 	}
 
-	if(s->blen != 0){
-		while(s->blen < 8 && dlen > 0){
-			s->buf[s->blen++] = *data;
-			data += 1;
-			dlen -= 1;
-		}
-
-		if(s->blen == 8){
-			s->blen = 0;
-			s->state[s->len++] ^= ((u64int)s->buf[0]) |
-				(((u64int)s->buf[1]) <<  8) |
-				(((u64int)s->buf[2]) << 16) |
-				(((u64int)s->buf[3]) << 24) |
-				(((u64int)s->buf[4]) << 32) |
-				(((u64int)s->buf[5]) << 40) |
-				(((u64int)s->buf[6]) << 48) |
-				(((u64int)s->buf[7]) << 56);
-			if(s->len == desc->rate){
-				s->len = 0;
-				keccak_p1600(s->state, desc->rounds);
-			}
-		}
-	}
-
-	while(dlen > 7){
-		s->state[s->len++] ^= ((u64int)data[0]) |
-			(((u64int)data[1]) <<  8) |
-			(((u64int)data[2]) << 16) |
-			(((u64int)data[3]) << 24) |
-			(((u64int)data[4]) << 32) |
-			(((u64int)data[5]) << 40) |
-			(((u64int)data[6]) << 48) |
-			(((u64int)data[7]) << 56);
-		data += 8;
-		dlen -= 8;
-		if(s->len == desc->rate){
-			s->len = 0;
-			keccak_p1600(s->state, desc->rounds);
-		}
-	}
-
-	while(dlen > 0){
-		s->buf[s->blen++] = *data;
-		data += 1;
-		dlen -= 1;
-	}
+	absorb(data, dlen, desc->rate, desc->rounds);
 
 	if(digest == nil)
 		return s;
 
-	s->buf[s->blen++] = desc->pad;
+	s->buf[s->blen++] = desc->pad == 0 ? s->separator : desc->pad;
 	while(s->blen < 8)
 		s->buf[s->blen++] = 0;
-	s->state[s->len++] ^= ((u64int)s->buf[0]) |
-		(((u64int)s->buf[1]) <<  8) |
-		(((u64int)s->buf[2]) << 16) |
-		(((u64int)s->buf[3]) << 24) |
-		(((u64int)s->buf[4]) << 32) |
-		(((u64int)s->buf[5]) << 40) |
-		(((u64int)s->buf[6]) << 48) |
-		(((u64int)s->buf[7]) << 56);
+	s->state[s->len++] ^= readu64(s->buf);
 	s->state[desc->rate-1] ^= 0x8000000000000000ULL;
 	keccak_p1600(s->state, desc->rounds);
 
@@ -188,68 +179,96 @@ static const SHA3Desc SHAKE_256 = {
 	.pad = 0x1f,
 };
 
+static const SHA3Desc TURBOSHAKE_128 = {
+	.size = 0,
+	.rate = 168/8,
+	.rounds = 12,
+	.pad = 0,
+};
+
+static const SHA3Desc TURBOSHAKE_256 = {
+	.size = 0,
+	.rate = 136/8,
+	.rounds = 12,
+	.pad = 0,
+};
+
+static const SHA3Desc CSHAKE_128 = {
+	.size = 0,
+	.rate = 168/8,
+	.rounds = 24,
+	.pad = 0,
+};
+
+static const SHA3Desc CSHAKE_256 = {
+	.size = 0,
+	.rate = 136/8,
+	.rounds = 24,
+	.pad = 0,
+};
+
 DigestState*
 sha3_224(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &SHA3_224);
+	return (DigestState*)_sha3run(data, dlen, digest, (SHA3_state*)s, &SHA3_224);
 }
 
 DigestState*
 sha3_256(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &SHA3_256);
+	return (DigestState*)_sha3run(data, dlen, digest, (SHA3_state*)s, &SHA3_256);
 }
 
 DigestState*
 sha3_384(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &SHA3_384);
+	return (DigestState*)_sha3run(data, dlen, digest, (SHA3_state*)s, &SHA3_384);
 }
 
 DigestState*
 sha3_512(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &SHA3_512);
+	return (DigestState*)_sha3run(data, dlen, digest, (SHA3_state*)s, &SHA3_512);
 }
 
 DigestState*
 keccak_224(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &KECCAK_224);
+	return (DigestState*)_sha3run(data, dlen, digest, (SHA3_state*)s, &KECCAK_224);
 }
 
 DigestState*
 keccak_256(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &KECCAK_256);
+	return (DigestState*)_sha3run(data, dlen, digest, (SHA3_state*)s, &KECCAK_256);
 }
 
 DigestState*
 keccak_384(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &KECCAK_384);
+	return (DigestState*)_sha3run(data, dlen, digest, (SHA3_state*)s, &KECCAK_384);
 }
 
 DigestState*
 keccak_512(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &KECCAK_512);
+	return (DigestState*)_sha3run(data, dlen, digest, (SHA3_state*)s, &KECCAK_512);
 }
 
 DigestState*
 keccak_256full(const uchar *data, ulong dlen, uchar *digest, DigestState *s)
 {
-	return (DigestState*)sha3(data, dlen, digest, (SHA3_state*)s, &KECCAK_256FULL);
+	return (DigestState*)_sha3run(data, dlen, digest, (SHA3_state*)s, &KECCAK_256FULL);
 }
 
 static DigestState*
-sha3xof(const uchar *data, ulong dlen, uchar *digest, ulong len,
+_sha3xof(const uchar *data, ulong dlen, uchar *digest, ulong len,
 		DigestState *state, const SHA3Desc *desc)
 {
 	usize brate;
 	SHA3_state *s;
 
-	s = sha3(data, dlen, digest, (SHA3_state*)state, desc);
+	s = _sha3run(data, dlen, digest, (SHA3_state*)state, desc);
 
 	if(s == nil || digest == nil)
 		return (DigestState*)s;
@@ -272,14 +291,14 @@ DigestState*
 shake_128(const uchar *data, ulong dlen, uchar *digest, ulong len,
 		DigestState *s)
 {
-	return sha3xof(data, dlen, digest, len, s, &SHAKE_128);
+	return _sha3xof(data, dlen, digest, len, s, &SHAKE_128);
 }
 
 DigestState*
 shake_256(const uchar *data, ulong dlen, uchar *digest, ulong len,
 		DigestState *s)
 {
-	return sha3xof(data, dlen, digest, len, s, &SHAKE_256);
+	return _sha3xof(data, dlen, digest, len, s, &SHAKE_256);
 }
 
 DigestState*
@@ -304,24 +323,132 @@ DigestState*
 turboshake_128(const uchar *data, ulong dlen, uchar *digest, ulong len,
 		DigestState *s)
 {
-	SHA3Desc desc = {
-		.size = 0,
-		.rate = 168/8,
-		.rounds = 12,
-		.pad = ((SHA3_state*)s)->separator,
-	};
-	return sha3xof(data, dlen, digest, len, s, &desc);
+	return _sha3xof(data, dlen, digest, len, s, &TURBOSHAKE_128);
 }
 
 DigestState*
 turboshake_256(const uchar *data, ulong dlen, uchar *digest, ulong len,
 		DigestState *s)
 {
-	SHA3Desc desc = {
-		.size = 0,
-		.rate = 136/8,
-		.rounds = 12,
-		.pad = ((SHA3_state*)s)->separator,
-	};
-	return sha3xof(data, dlen, digest, len, s, &desc);
+	return _sha3xof(data, dlen, digest, len, s, &TURBOSHAKE_256);
+}
+
+#define leftencode(v)                                                          \
+	do{                                                                          \
+		nbuf[1] = (uchar)((v) >> 56);                                              \
+		nbuf[2] = (uchar)((v) >> 48);                                              \
+		nbuf[3] = (uchar)((v) >> 40);                                              \
+		nbuf[4] = (uchar)((v) >> 32);                                              \
+		nbuf[5] = (uchar)((v) >> 24);                                              \
+		nbuf[6] = (uchar)((v) >> 16);                                              \
+		nbuf[7] = (uchar)((v) >> 8);                                               \
+		nbuf[8] = (uchar)(v);                                                      \
+		len = 0;                                                                   \
+		for(n = 1; n < 8 && nbuf[n] == 0; ++n) len++;                              \
+		nbuf[len] = (uchar)(8-len);                                                \
+		b = &nbuf[len];                                                            \
+		len = 9-len;                                                               \
+	}while(0)
+
+static SHA3_state*
+cshake_init_name(uchar *name, usize nlen, uchar *customization, usize clen,
+		usize rate, SHA3_state *s)
+{
+	u64int v64;
+	uchar nbuf[9], *b;
+	usize len, n;
+
+	assert((nlen&7) == 0);
+
+	if(s == nil){
+		s = mallocz(sizeof(*s), 1);
+		if(s == nil)
+			return nil;
+		s->malloced = 1;
+	}else{
+		char m = s->malloced;
+		memset(s, 0, sizeof(*s));
+		s->malloced = m;
+	}
+
+	if(nlen == 0 && clen == 0){
+		s->separator = 0x1f;
+		return s;
+	}
+
+	s->separator = 4;
+
+	v64 = (u64int)rate*8;
+	leftencode(v64);
+	absorb(b, len, rate, 24);
+
+	v64 = (u64int)nlen*8;
+	leftencode(v64);
+	absorb(b, len, rate, 24);
+
+	len = nlen;
+	b = name;
+	absorb(b, len, rate, 24);
+
+	v64 = (u64int)clen*8;
+	leftencode(v64);
+	absorb(b, len, rate, 24);
+
+	len = clen;
+	b = customization;
+	absorb(b, len, rate, 24);
+
+	if(s->blen != 0){
+		while(s->blen < 8)
+			s->buf[s->blen++] = 0;
+		s->blen = 0;
+		s->state[s->len++] ^= readu64(s->buf);
+	}
+	if(s->len != 0)
+		keccak_p1600(s->state, 24);
+	s->len = 0;
+
+	return s;
+}
+
+DigestState*
+cshake_128_init_name(uchar *name, usize nlen, uchar *customization,
+		usize clen, DigestState *s)
+{
+	return (DigestState*)cshake_init_name(name, nlen, customization, clen,
+			168/8, (SHA3_state*)s);
+}
+
+DigestState*
+cshake_256_init_name(uchar *name, usize nlen, uchar *customization,
+		usize clen, DigestState *s)
+{
+	return (DigestState*)cshake_init_name(name, nlen, customization, clen,
+			136/8, (SHA3_state*)s);
+}
+
+DigestState*
+cshake_128_init(uchar *customization, usize len, DigestState *s)
+{
+	return cshake_128_init_name(nil, 0, customization, len, s);
+}
+
+DigestState*
+cshake_256_init(uchar *customization, usize len, DigestState *s)
+{
+	return cshake_256_init_name(nil, 0, customization, len, s);
+}
+
+DigestState*
+cshake_128(const uchar *data, ulong dlen, uchar *digest, ulong len,
+		DigestState *s)
+{
+	return _sha3xof(data, dlen, digest, len, s, &CSHAKE_128);
+}
+
+DigestState*
+cshake_256(const uchar *data, ulong dlen, uchar *digest, ulong len,
+		DigestState *s)
+{
+	return _sha3xof(data, dlen, digest, len, s, &CSHAKE_256);
 }

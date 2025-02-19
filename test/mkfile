@@ -18,6 +18,8 @@ HFILES=\
 	shake_256.c\
 	turboshake_128.c\
 	turboshake_256.c\
+	cshake_128.c\
+	cshake_256.c\
 
 </sys/src/cmd/mkone
 

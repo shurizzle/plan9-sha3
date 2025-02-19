@@ -26,6 +26,8 @@ typedef struct DigestState SHAKE_128state;
 typedef struct DigestState SHAKE_256state;
 typedef struct DigestState TurboSHAKE_128state;
 typedef struct DigestState TurboSHAKE_256state;
+typedef struct DigestState CSHAKE_128state;
+typedef struct DigestState CSHAKE_256state;
 
 void	keccak_p200(u8int *data, usize round_count);
 void	keccak_f200(u8int *data);
@@ -50,3 +52,9 @@ DigestState*	shake_256(uchar*, ulong, uchar*, ulong, DigestState*);
 DigestState*	turboshake_init(uchar, DigestState*);
 DigestState*	turboshake_128(uchar*, ulong, uchar*, ulong, DigestState*);
 DigestState*	turboshake_256(uchar*, ulong, uchar*, ulong, DigestState*);
+DigestState*	cshake_128_init_name(uchar*, usize, uchar*, usize, DigestState*);
+DigestState*	cshake_256_init_name(uchar*, usize, uchar*, usize, DigestState*);
+DigestState*	cshake_128_init(uchar*, usize, DigestState*);
+DigestState*	cshake_256_init(uchar*, usize, DigestState*);
+DigestState*	cshake_128(uchar*, ulong, uchar*, ulong, DigestState*);
+DigestState*	cshake_256(uchar*, ulong, uchar*, ulong, DigestState*);
