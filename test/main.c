@@ -19,6 +19,9 @@ DigestState*	keccak_512(uchar*, ulong, uchar*, DigestState*);
 DigestState*	keccak_256full(uchar*, ulong, uchar*, DigestState*);
 DigestState*	shake_128(uchar*, ulong, uchar*, ulong, DigestState*);
 DigestState*	shake_256(uchar*, ulong, uchar*, ulong, DigestState*);
+DigestState*	turboshake_init(uchar, DigestState*);
+DigestState*	turboshake_128(uchar*, ulong, uchar*, ulong, DigestState*);
+DigestState*	turboshake_256(uchar*, ulong, uchar*, ulong, DigestState*);
 
 static void
 test_keccak_f200(void)
@@ -177,6 +180,8 @@ test_keccak_f1600(void)
 #include "keccak_256full.c"
 #include "shake_128.c"
 #include "shake_256.c"
+#include "turboshake_128.c"
+#include "turboshake_256.c"
 
 void
 main(void)
@@ -197,6 +202,8 @@ main(void)
 		{"keccak_256full", test_keccak_256full},
 		{"shake_128",      test_shake_128},
 		{"shake_256",      test_shake_256},
+		{"turboshake_128", test_turboshake_128},
+		{"turboshake_256", test_turboshake_256},
 	};
 	usize max = 0;
 	for(usize i = 0; i < nelem(TESTS); ++i){

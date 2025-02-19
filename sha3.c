@@ -7,7 +7,9 @@ struct SHA3_state
 {
 	uvlong	len;
 	u64int	state[25];
-	uchar	buf[120];
+	uchar	buf[8];
+	uchar	separator;
+	uchar	_pad[111];
 	int	blen;
 	char	malloced;
 	char	seeded;
@@ -18,10 +20,11 @@ struct SHA3Desc
 {
 	usize size;
 	usize rate;
-	u8int pad;
+	usize rounds;
+	uchar pad;
 };
 
-void	keccak_f1600(u64int *data);
+void	keccak_p1600(u64int*, usize);
 
 static SHA3_state*
 sha3(const uchar *data, ulong dlen, uchar *digest, SHA3_state *s,
@@ -53,7 +56,7 @@ sha3(const uchar *data, ulong dlen, uchar *digest, SHA3_state *s,
 				(((u64int)s->buf[7]) << 56);
 			if(s->len == desc->rate){
 				s->len = 0;
-				keccak_f1600(s->state);
+				keccak_p1600(s->state, desc->rounds);
 			}
 		}
 	}
@@ -71,7 +74,7 @@ sha3(const uchar *data, ulong dlen, uchar *digest, SHA3_state *s,
 		dlen -= 8;
 		if(s->len == desc->rate){
 			s->len = 0;
-			keccak_f1600(s->state);
+			keccak_p1600(s->state, desc->rounds);
 		}
 	}
 
@@ -96,7 +99,7 @@ sha3(const uchar *data, ulong dlen, uchar *digest, SHA3_state *s,
 		(((u64int)s->buf[6]) << 48) |
 		(((u64int)s->buf[7]) << 56);
 	s->state[desc->rate-1] ^= 0x8000000000000000ULL;
-	keccak_f1600(s->state);
+	keccak_p1600(s->state, desc->rounds);
 
 	if(desc->size == 0)
 		return s;
@@ -111,66 +114,77 @@ sha3(const uchar *data, ulong dlen, uchar *digest, SHA3_state *s,
 static const SHA3Desc SHA3_224 = {
 	.size = 28,
 	.rate = 25-2*28/8,
+	.rounds = 24,
 	.pad = 6,
 };
 
 static const SHA3Desc SHA3_256 = {
 	.size = 32,
 	.rate = 25-2*32/8,
+	.rounds = 24,
 	.pad = 6,
 };
 
 static const SHA3Desc SHA3_384 = {
 	.size = 48,
 	.rate = 25-2*48/8,
+	.rounds = 24,
 	.pad = 6,
 };
 
 static const SHA3Desc SHA3_512 = {
 	.size = 64,
 	.rate = 25-2*64/8,
+	.rounds = 24,
 	.pad = 6,
 };
 
 static const SHA3Desc KECCAK_224 = {
 	.size = 28,
 	.rate = 144/8,
+	.rounds = 24,
 	.pad = 1,
 };
 
 static const SHA3Desc KECCAK_256 = {
 	.size = 32,
 	.rate = 136/8,
+	.rounds = 24,
 	.pad = 1,
 };
 
 static const SHA3Desc KECCAK_384 = {
 	.size = 48,
 	.rate = 104/8,
+	.rounds = 24,
 	.pad = 1,
 };
 
 static const SHA3Desc KECCAK_512 = {
 	.size = 64,
 	.rate = 72/8,
+	.rounds = 24,
 	.pad = 1,
 };
 
 static const SHA3Desc KECCAK_256FULL = {
 	.size = 200,
 	.rate = 136/8,
+	.rounds = 24,
 	.pad = 1,
 };
 
 static const SHA3Desc SHAKE_128 = {
 	.size = 0,
 	.rate = 168/8,
+	.rounds = 24,
 	.pad = 0x1f,
 };
 
 static const SHA3Desc SHAKE_256 = {
 	.size = 0,
 	.rate = 136/8,
+	.rounds = 24,
 	.pad = 0x1f,
 };
 
@@ -243,7 +257,7 @@ sha3xof(const uchar *data, ulong dlen, uchar *digest, ulong len,
 	brate = desc->rate*8;
 	while(len > brate){
 		memcpy(digest, s->state, brate);
-		keccak_f1600(s->state);
+		keccak_p1600(s->state, desc->rounds);
 		digest += brate;
 		len -= brate;
 	}
@@ -266,4 +280,48 @@ shake_256(const uchar *data, ulong dlen, uchar *digest, ulong len,
 		DigestState *s)
 {
 	return sha3xof(data, dlen, digest, len, s, &SHAKE_256);
+}
+
+DigestState*
+turboshake_init(uchar separator, DigestState *s)
+{
+	assert(separator > 0 && separator < 0x80);
+	if(s == nil){
+		s = mallocz(sizeof(*s), 1);
+		if(s == nil)
+			return nil;
+		s->malloced = 1;
+	}else{
+		char malloced = s->malloced;
+		memset(s, 0, sizeof(*s));
+		s->malloced = malloced;
+	}
+	((SHA3_state*)s)->separator = separator;
+	return s;
+}
+
+DigestState*
+turboshake_128(const uchar *data, ulong dlen, uchar *digest, ulong len,
+		DigestState *s)
+{
+	SHA3Desc desc = {
+		.size = 0,
+		.rate = 168/8,
+		.rounds = 12,
+		.pad = ((SHA3_state*)s)->separator,
+	};
+	return sha3xof(data, dlen, digest, len, s, &desc);
+}
+
+DigestState*
+turboshake_256(const uchar *data, ulong dlen, uchar *digest, ulong len,
+		DigestState *s)
+{
+	SHA3Desc desc = {
+		.size = 0,
+		.rate = 136/8,
+		.rounds = 12,
+		.pad = ((SHA3_state*)s)->separator,
+	};
+	return sha3xof(data, dlen, digest, len, s, &desc);
 }
