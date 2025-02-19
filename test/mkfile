@@ -1,0 +1,16 @@
+</$objtype/mkfile
+
+LIB=../libsha3.a
+OFILES=\
+	main.$O\
+
+HFILES=\
+	sha3_224.c\
+	sha3_256.c\
+	sha3_384.c\
+	sha3_512.c\
+
+</sys/src/cmd/mkone
+
+test:VQ: $O.out
+	6.out
