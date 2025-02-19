@@ -2,14 +2,14 @@
 
 enum
 {
-	SHA3_224dlen=	28,	/* SHA3-224 digest length */
-	SHA3_256dlen=	32,	/* SHA3-256 digest length */
-	SHA3_384dlen=	48,	/* SHA3-384 digest length */
-	SHA3_512dlen=	64,	/* SHA3-512 digest length */
-	KECCAK_224dlen=	28,	/* KECCAK-224 digest length */
-	KECCAK_256dlen=	32,	/* KECCAK-256 digest length */
-	KECCAK_384dlen=	48,	/* KECCAK-384 digest length */
-	KECCAK_512dlen=	64,	/* KECCAK-512 digest length */
+	SHA3_224dlen=				28,	/* SHA3-224 digest length */
+	SHA3_256dlen=				32,	/* SHA3-256 digest length */
+	SHA3_384dlen=				48,	/* SHA3-384 digest length */
+	SHA3_512dlen=				64,	/* SHA3-512 digest length */
+	KECCAK_224dlen=			28,	/* KECCAK-224 digest length */
+	KECCAK_256dlen=			32,	/* KECCAK-256 digest length */
+	KECCAK_384dlen=			48,	/* KECCAK-384 digest length */
+	KECCAK_512dlen=			64,	/* KECCAK-512 digest length */
 	KECCAK_256FULLdlen=	32,	/* KECCAK-256-FULL digest length */
 };
 
@@ -17,15 +17,15 @@ typedef struct DigestState SHA3_224state;
 typedef struct DigestState SHA3_256state;
 typedef struct DigestState SHA3_384state;
 typedef struct DigestState SHA3_512state;
-typedef struct DigestState keccak_224state;
-typedef struct DigestState keccak_256state;
-typedef struct DigestState keccak_384state;
-typedef struct DigestState keccak_512state;
-typedef struct DigestState keccak_256fullstate;
-typedef struct DigestState shake_128state;
-typedef struct DigestState shake_256state;
-typedef struct DigestState turboshake_128state;
-typedef struct DigestState turboshake_256state;
+typedef struct DigestState KECCAK_224state;
+typedef struct DigestState KECCAK_256state;
+typedef struct DigestState KECCAK_384state;
+typedef struct DigestState KECCAK_512state;
+typedef struct DigestState KECCAK_256FULLstate;
+typedef struct DigestState SHAKE_128state;
+typedef struct DigestState SHAKE_256state;
+typedef struct DigestState TurboSHAKE_128state;
+typedef struct DigestState TurboSHAKE_256state;
 
 void	keccak_p200(u8int *data, usize round_count);
 void	keccak_f200(u8int *data);
