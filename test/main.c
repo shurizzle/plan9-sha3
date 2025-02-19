@@ -4,14 +4,6 @@
 
 static char *fail = nil;
 
-enum
-{
-	SHA3_224dlen=	28,	/* SHA3-224 digest length */
-	SHA3_256dlen=	32,	/* SHA3-256 digest length */
-	SHA3_384dlen=	48,	/* SHA3-384 digest length */
-	SHA3_512dlen=	64,	/* SHA3-512 digest length */
-};
-
 void	keccak_f200(u8int *data);
 void	keccak_f400(u16int *data);
 void	keccak_f800(u32int *data);
@@ -20,6 +12,11 @@ DigestState*	sha3_224(uchar*, ulong, uchar*, DigestState*);
 DigestState*	sha3_256(uchar*, ulong, uchar*, DigestState*);
 DigestState*	sha3_384(uchar*, ulong, uchar*, DigestState*);
 DigestState*	sha3_512(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_224(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_256(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_384(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_512(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_256full(uchar*, ulong, uchar*, DigestState*);
 
 static void
 test_keccak_f200(void)
@@ -171,19 +168,29 @@ test_keccak_f1600(void)
 #include "sha3_256.c"
 #include "sha3_384.c"
 #include "sha3_512.c"
+#include "keccak_224.c"
+#include "keccak_256.c"
+#include "keccak_384.c"
+#include "keccak_512.c"
+#include "keccak_256full.c"
 
 void
 main(void)
 {
 	static const struct { char *name; void(*f)(void); } TESTS[] = {
-		{"kekkac_f200",  test_keccak_f200},
-		{"kekkac_f400",  test_keccak_f400},
-		{"kekkac_f800",  test_keccak_f800},
-		{"kekkac_f1600", test_keccak_f1600},
-		{"sha3_224",     test_sha3_224},
-		{"sha3_256",     test_sha3_256},
-		{"sha3_384",     test_sha3_384},
-		{"sha3_512",     test_sha3_512},
+		{"kekkac_f200",    test_keccak_f200},
+		{"kekkac_f400",    test_keccak_f400},
+		{"kekkac_f800",    test_keccak_f800},
+		{"kekkac_f1600",   test_keccak_f1600},
+		{"sha3_224",       test_sha3_224},
+		{"sha3_256",       test_sha3_256},
+		{"sha3_384",       test_sha3_384},
+		{"sha3_512",       test_sha3_512},
+		{"keccak_224",     test_keccak_224},
+		{"keccak_256",     test_keccak_256},
+		{"keccak_384",     test_keccak_384},
+		{"keccak_512",     test_keccak_512},
+		{"keccak_256full", test_keccak_256full},
 	};
 	usize max = 0;
 	for(usize i = 0; i < nelem(TESTS); ++i){

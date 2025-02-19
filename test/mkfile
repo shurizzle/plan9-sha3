@@ -9,6 +9,11 @@ HFILES=\
 	sha3_256.c\
 	sha3_384.c\
 	sha3_512.c\
+	keccak_224.c\
+	keccak_256.c\
+	keccak_384.c\
+	keccak_512.c\
+	keccak_256full.c\
 
 </sys/src/cmd/mkone
 

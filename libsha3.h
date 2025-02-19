@@ -6,6 +6,11 @@ enum
 	SHA3_256dlen=	32,	/* SHA3-256 digest length */
 	SHA3_384dlen=	48,	/* SHA3-384 digest length */
 	SHA3_512dlen=	64,	/* SHA3-512 digest length */
+	KECCAK_224dlen=	28,	/* KECCAK-224 digest length */
+	KECCAK_256dlen=	32,	/* KECCAK-256 digest length */
+	KECCAK_384dlen=	48,	/* KECCAK-384 digest length */
+	KECCAK_512dlen=	64,	/* KECCAK-512 digest length */
+	KECCAK_256FULLdlen=	32,	/* KECCAK-256-FULL digest length */
 };
 
 typedef struct DigestState SHA3_224state;
@@ -26,3 +31,8 @@ DigestState*	sha3_224(uchar*, ulong, uchar*, DigestState*);
 DigestState*	sha3_256(uchar*, ulong, uchar*, DigestState*);
 DigestState*	sha3_384(uchar*, ulong, uchar*, DigestState*);
 DigestState*	sha3_512(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_224(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_256(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_384(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_512(uchar*, ulong, uchar*, DigestState*);
+DigestState*	keccak_256full(uchar*, ulong, uchar*, DigestState*);
