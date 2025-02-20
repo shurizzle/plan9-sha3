@@ -12,5 +12,23 @@ test_keccak_384(void)
 			fail = smprint("keccak_384: case %uzd failed", i);
 			return;
 		}
+		usize cmaxlen = 17;
+		if(cases[i].len < 17) cmaxlen = cases[i].len;
+		for(usize c = 1; c < cmaxlen; ++c){
+			uchar *m = cases[i].data;
+			usize l = cases[i].len;
+			DigestState *state = nil;
+			while(l >= c){
+				state = keccak_384(m, c, nil, state);
+				m += c;
+				l -= c;
+			}
+			state = keccak_384(m, l, digest, state);
+			free(state);
+			if(memcmp(digest, cases[i].digest, 48) != 0){
+				fail = smprint("keccak_384: case %uzd failed", i);
+				return;
+			}
+		}
 	}
 }

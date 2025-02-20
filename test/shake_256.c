@@ -1800,5 +1800,23 @@ test_shake_256(void)
 			fail = smprint("shake_256: case %uzd failed", i);
 			return;
 		}
+		usize cmaxlen = 17;
+		if(cases[i].dlen < 17) cmaxlen = cases[i].dlen;
+		for(usize c = 1; c < cmaxlen; ++c){
+			uchar *m = cases[i].data;
+			usize l = cases[i].dlen;
+			DigestState *state = nil;
+			while(l >= c){
+				state = shake_256(m, c, nil, 0, state);
+				m += c;
+				l -= c;
+			}
+			state = shake_256(m, l, digest, cases[i].len, state);
+			free(state);
+			if(memcmp(digest, cases[i].digest, cases[i].len) != 0){
+				fail = smprint("shake_256: case %uzd failed", i);
+				return;
+			}
+		}
 	}
 }
