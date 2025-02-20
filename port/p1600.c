@@ -27,41 +27,40 @@ static const u64int RC[24] = {
 	0x0000000080000001,
 	0x8000000080008008
 };
+
 void
 keccak_p1600(u64int *state, usize round_count)
 {
-	u64int t1;
+	u64int t1, array[5], *round_consts;
 
 	if(round_count > 24){
 		fprint(2, "keccak_p1600: invalid round count %uzd\n", round_count);
 		abort();
 	}
 
-	u64int *round_consts = &RC[24-round_count];
+	round_consts = &RC[24-round_count];
 	for(usize idx = 0; idx < round_count; ++idx){
-		u64int array[5] = {0, 0, 0, 0, 0};
-
-		array[0] ^= state[0];
+		array[0] = state[0];
 		array[0] ^= state[5];
 		array[0] ^= state[10];
 		array[0] ^= state[15];
 		array[0] ^= state[20];
-		array[1] ^= state[1];
+		array[1] = state[1];
 		array[1] ^= state[6];
 		array[1] ^= state[11];
 		array[1] ^= state[16];
 		array[1] ^= state[21];
-		array[2] ^= state[2];
+		array[2] = state[2];
 		array[2] ^= state[7];
 		array[2] ^= state[12];
 		array[2] ^= state[17];
 		array[2] ^= state[22];
-		array[3] ^= state[3];
+		array[3] = state[3];
 		array[3] ^= state[8];
 		array[3] ^= state[13];
 		array[3] ^= state[18];
 		array[3] ^= state[23];
-		array[4] ^= state[4];
+		array[4] = state[4];
 		array[4] ^= state[9];
 		array[4] ^= state[14];
 		array[4] ^= state[19];

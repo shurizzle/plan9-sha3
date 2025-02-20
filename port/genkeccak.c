@@ -68,21 +68,21 @@ print_pn(Biobuf *bp, char *t, usize width, usize f_round_count)
 {
 	Bprint(bp, "#include <u.h>\n#include <libc.h>\n\n");
 	print_rc(bp, t, width);
-	Bprint(bp, "void\nkeccak_p%uzd(%s *state, usize round_count)\n{\n",
+	Bprint(bp, "\nvoid\nkeccak_p%uzd(%s *state, usize round_count)\n{\n",
 			width*200, t);
-	Bprint(bp, "\t%s t1;\n\n", t);
+	Bprint(bp, "\t%s t1, array[5], *round_consts;\n\n", t);
 	Bprint(bp, "\tif(round_count > %uzd){\n", f_round_count);
 	Bprint(bp, "\t\tfprint(2, \"keccak_p%uzd: invalid round count %%uzd\\n\""
 			", round_count);\n", width*200);
 	Bprint(bp, "\t\tabort();\n");
 	Bprint(bp, "\t}\n\n");
-	Bprint(bp, "\t%s *round_consts = &RC[%uzd-round_count];\n", t, f_round_count);
+	Bprint(bp, "\tround_consts = &RC[%uzd-round_count];\n", f_round_count);
 	Bprint(bp, "\tfor(usize idx = 0; idx < round_count; ++idx){\n");
 
-	Bprint(bp, "\t\t%s array[5] = {0, 0, 0, 0, 0};\n\n", t);
 	for(usize x = 0; x < 5; ++x)
 		for(usize y = 0; y < 5; ++y)
-			Bprint(bp, "\t\tarray[%uzd] ^= state[%uzd];\n", x, 5*y+x);
+			Bprint(bp, "\t\tarray[%uzd] %s= state[%uzd];\n",
+					x, y == 0 ? "" : "^", 5*y+x);
 
 	for(usize x = 0; x < 5; ++x){
 		Bprint(bp, "\t\tt1 = array[%uzd];\n", (x+1)%5);
