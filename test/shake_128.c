@@ -1,4 +1,4 @@
-void
+static void
 test_shake_128(void)
 {
 	static const uchar digest0[512] = {

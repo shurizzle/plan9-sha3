@@ -1,4 +1,4 @@
-void
+static void
 test_keccak_256full(void)
 {
 	static const uchar data0[21] = {

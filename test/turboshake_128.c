@@ -1,4 +1,4 @@
-void
+static void
 test_turboshake_128(void)
 {
 	static const uchar output0[32] = {

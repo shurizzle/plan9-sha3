@@ -1,4 +1,4 @@
-void
+static void
 test_sha3_512(void)
 {
 	static const uchar data0[1] = {

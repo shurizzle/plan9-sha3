@@ -1,4 +1,4 @@
-void
+static void
 test_keccak_512(void)
 {
 	static const struct { uchar *data; usize len; uchar digest[64]; } cases[1] = {

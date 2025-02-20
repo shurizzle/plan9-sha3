@@ -1,4 +1,4 @@
-void
+static void
 test_cshake_256(void)
 {
 	static const uchar customization0[15] = {
