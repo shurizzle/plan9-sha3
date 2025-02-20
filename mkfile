@@ -34,12 +34,12 @@ OFILES=\
 	port/cshake_256.$O\
 
 HFILES=\
-	common.h\
+	port/common.h\
 
 </sys/src/cmd/mklib
 
 %.$O: %.c
-	$CC $CFLAGS -o $stem.$O $stem.c
+	$CC -I port $CFLAGS -o $stem.$O $stem.c
 
 test:VQ: $LIB
 	if(! ~ $LIBDIR '/*' && ! ~ $LIBDIR '#*')
